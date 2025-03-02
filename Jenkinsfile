@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = 'your-dockerhub-username/sample-app'
+        DOCKER_IMAGE = 'bishnu987/sample-app'
         DOCKER_TAG = 'latest'
     }
 
@@ -16,34 +16,54 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Building the application...'
-                sh 'npm install'  // If using Node.js
-                sh 'mvn clean package' // If using Java (Maven)
+                script {
+                    if (fileExists('package.json')) {
+                        sh 'npm install'
+                    } else if (fileExists('pom.xml')) {
+                        sh 'mvn clean package'
+                    } else {
+                        error 'No recognized build files found!'
+                    }
+                }
             }
         }
 
         stage('Test') {
             steps {
                 echo 'Running tests...'
-                sh 'npm test'  // If using Node.js
-                sh 'mvn test'  // If using Java (Maven)
+                script {
+                    if (fileExists('package.json')) {
+                        sh 'npm test'
+                    } else if (fileExists('pom.xml')) {
+                        sh 'mvn test'
+                    } else {
+                        error 'No recognized test files found!'
+                    }
+                }
             }
         }
 
         stage('Docker Build & Push') {
             steps {
-                echo 'Building Docker image...'
-                sh """
-                    docker build -t $DOCKER_IMAGE:$DOCKER_TAG .
-                    docker login -u bishnu987 -p Bishnu987@
-                    docker push $DOCKER_IMAGE:$DOCKER_TAG
-                """
+                withCredentials([string(credentialsId: 'docker-hub-password', variable: 'DOCKER_PASSWORD')]) {
+                    echo 'Building Docker image...'
+                    sh """
+                        docker build -t $DOCKER_IMAGE:$DOCKER_TAG .
+                        echo $DOCKER_PASSWORD | docker login -u your-dockerhub-username --password-stdin
+                        docker push $DOCKER_IMAGE:$DOCKER_TAG
+                    """
+                }
             }
         }
 
         stage('Deploy') {
             steps {
                 echo 'Deploying to server...'
-                sh 'docker run -d -p 8080:8080 $DOCKER_IMAGE:$DOCKER_TAG'
+                sh """
+                    docker stop sample-app || true
+                    docker rm sample-app || true
+                    docker run -d --name sample-app -p 8080:8080 --restart=always $DOCKER_IMAGE:$DOCKER_TAG
+                """
             }
         }
     }
