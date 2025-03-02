@@ -40,18 +40,22 @@ pipeline {
     }
 }
 
+       stages {
         stage('Docker Build & Push') {
             steps {
                 withCredentials([string(credentialsId: 'docker-hub-password', variable: 'DOCKER_PASSWORD')]) {
-                    echo 'Building Docker image...'
-                    sh """
-                        docker build -t $DOCKER_IMAGE:$DOCKER_TAG .
-                        echo $DOCKER_PASSWORD | docker login -u your-dockerhub-username --password-stdin
-                        docker push $DOCKER_IMAGE:$DOCKER_TAG
-                    """
+                    script {
+                        echo 'Building Docker image...'
+                        sh """
+                            docker build -t $DOCKER_IMAGE:$DOCKER_TAG .
+                            echo $DOCKER_PASSWORD | docker login -u bishnudipu --password-stdin
+                            docker push $DOCKER_IMAGE:$DOCKER_TAG
+                        """
+                    }
                 }
             }
         }
+    }
 
         stage('Deploy') {
             steps {
