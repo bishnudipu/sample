@@ -5,7 +5,7 @@ import './App.css'
 
 function App() {
   const [count, setCount] = useState(0)
- console.log("check1scs2scdewq")
+ console.log("checdck1scs2scdewq")
   return (
     <>
       <div>
